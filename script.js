@@ -2,13 +2,10 @@
 /*
   Valentine Proposal interactions
 
-  Requirements:
   - Yes: clickable, success state + confetti
-  - No: never clickable and always escapes
-    - Desktop: pointerenter / pointermove triggers escape
-    - Mobile: touchstart triggers instant escape
-    - Also pointerdown triggers escape before click
-  - No stays within .arena and never overlaps Yes (min distance)
+  - No: never clickable, always escapes
+  - Mobile: "No" jumps away on tap
+  - "No" moves inside the card (larger chase area), not just inside the button row
 */
 
 (function () {
@@ -21,14 +18,16 @@
 
   if (!card || !arena || !yesBtn || !noBtn || !headline || !confetti) return;
 
-  const MIN_DIST = 90; // minimum distance from Yes (center-to-center)
-  const MOBILE_NEAR_DIST = 110;
+  const EDGE_PAD = 12;
+  const MIN_DIST_FROM_YES = 130;
+  const CHASE_TRIGGER_DIST = 130;
 
   // -------- YES: success state --------
   yesBtn.addEventListener('click', () => {
     headline.textContent = 'Yay! 💖';
 
     arena.style.display = 'none';
+    noBtn.style.display = 'none';
     const hints = card.querySelectorAll('.hint');
     hints.forEach((h) => (h.style.display = 'none'));
 
@@ -61,43 +60,29 @@
     }
   }
 
-  // -------- NO: never clickable --------
-  ['click', 'mousedown', 'mouseup'].forEach((evt) => {
-    noBtn.addEventListener(
-      evt,
-      (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        escape(true);
-        return false;
-      },
-      { passive: false }
+  function getMoveBounds() {
+    const cardRect = card.getBoundingClientRect();
+    const hero = card.querySelector('.hero');
+    const hint = card.querySelector('.hint');
+
+    const heroBottom = hero ? hero.getBoundingClientRect().bottom - cardRect.top : 0;
+    const hintTop = hint ? hint.getBoundingClientRect().top - cardRect.top : cardRect.height;
+
+    const minLeft = EDGE_PAD;
+    const maxLeft = cardRect.width - noBtn.offsetWidth - EDGE_PAD;
+    const minTop = Math.max(heroBottom + 8, EDGE_PAD);
+    const maxTop = Math.min(
+      cardRect.height - noBtn.offsetHeight - EDGE_PAD,
+      hintTop - noBtn.offsetHeight - 12
     );
-  });
 
-  // -------- Robust positioning --------
-  function initPosition() {
-    if (!noBtn.offsetWidth || !noBtn.offsetHeight) {
-      requestAnimationFrame(initPosition);
-      return;
-    }
-    positionNoNearRight();
-    noBtn.style.opacity = '1';
-  }
-
-  function positionNoNearRight() {
-    const a = arena.getBoundingClientRect();
-    const y = yesBtn.getBoundingClientRect();
-
-    const pad = 8;
-    const left = clamp(
-      (y.left - a.left) + y.width + 16,
-      pad,
-      a.width - noBtn.offsetWidth - pad
-    );
-    const top = clamp((y.top - a.top), pad, a.height - noBtn.offsetHeight - pad);
-
-    setNoPos(left, top, true);
+    return {
+      cardRect,
+      minLeft,
+      maxLeft,
+      minTop,
+      maxTop,
+    };
   }
 
   function setNoPos(leftPx, topPx, instant) {
@@ -105,7 +90,7 @@
       noBtn.style.transitionDuration = '0ms';
       noBtn.style.left = `${leftPx}px`;
       noBtn.style.top = `${topPx}px`;
-      noBtn.style.transform = 'translateX(0)';
+      noBtn.style.transform = 'translate(0, 0)';
       requestAnimationFrame(() => {
         noBtn.style.transitionDuration = '';
       });
@@ -114,18 +99,38 @@
 
     noBtn.style.left = `${leftPx}px`;
     noBtn.style.top = `${topPx}px`;
-    noBtn.style.transform = 'translateX(0)';
+    noBtn.style.transform = 'translate(0, 0)';
   }
 
-  function escape(instant) {
-    const a = arena.getBoundingClientRect();
+  function positionNoNearRight() {
     const y = yesBtn.getBoundingClientRect();
+    const b = getMoveBounds();
 
-    const pad = 8;
-    const maxLeft = a.width - noBtn.offsetWidth - pad;
-    const maxTop = a.height - noBtn.offsetHeight - pad;
+    if (b.maxLeft <= b.minLeft || b.maxTop <= b.minTop) return;
 
-    if (maxLeft <= pad || maxTop <= pad) {
+    const left = clamp(y.right - b.cardRect.left + 10, b.minLeft, b.maxLeft);
+    const top = clamp(y.top - b.cardRect.top, b.minTop, b.maxTop);
+    setNoPos(left, top, true);
+  }
+
+  function getEventPoint(e) {
+    if (e.touches && e.touches[0]) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    if (e.changedTouches && e.changedTouches[0]) {
+      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    }
+    if (typeof e.clientX === 'number' && typeof e.clientY === 'number') {
+      return { x: e.clientX, y: e.clientY };
+    }
+    return null;
+  }
+
+  function escape(instant, point) {
+    const y = yesBtn.getBoundingClientRect();
+    const b = getMoveBounds();
+
+    if (b.maxLeft <= b.minLeft || b.maxTop <= b.minTop) {
       positionNoNearRight();
       return;
     }
@@ -135,15 +140,18 @@
       y: (y.top + y.bottom) / 2,
     };
 
-    for (let i = 0; i < 25; i++) {
-      const left = randomBetween(pad, maxLeft);
-      const top = randomBetween(pad, maxTop);
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < 60; i++) {
+      const left = randomBetween(b.minLeft, b.maxLeft);
+      const top = randomBetween(b.minTop, b.maxTop);
 
       const cand = {
-        left: a.left + left,
-        top: a.top + top,
-        right: a.left + left + noBtn.offsetWidth,
-        bottom: a.top + top + noBtn.offsetHeight,
+        left: b.cardRect.left + left,
+        top: b.cardRect.top + top,
+        right: b.cardRect.left + left + noBtn.offsetWidth,
+        bottom: b.cardRect.top + top + noBtn.offsetHeight,
       };
 
       const candCenter = {
@@ -151,15 +159,34 @@
         y: (cand.top + cand.bottom) / 2,
       };
 
-      const dist = distance(candCenter.x, candCenter.y, yesCenter.x, yesCenter.y);
-      if (dist < MIN_DIST) continue;
+      const distYes = distance(candCenter.x, candCenter.y, yesCenter.x, yesCenter.y);
+      if (distYes < MIN_DIST_FROM_YES) continue;
       if (rectsOverlap(cand, y)) continue;
 
-      setNoPos(left, top, !!instant);
+      const distPointer = point
+        ? distance(candCenter.x, candCenter.y, point.x, point.y)
+        : Math.random() * 60;
+      const score = distPointer + distYes * 0.45;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = { left, top };
+      }
+    }
+
+    if (!best) {
+      positionNoNearRight();
       return;
     }
 
-    positionNoNearRight();
+    setNoPos(best.left, best.top, !!instant);
+  }
+
+  function nearNo(point, threshold) {
+    const rect = noBtn.getBoundingClientRect();
+    const cx = (rect.left + rect.right) / 2;
+    const cy = (rect.top + rect.bottom) / 2;
+    return distance(point.x, point.y, cx, cy) < threshold;
   }
 
   function rectsOverlap(a, b) {
@@ -180,52 +207,82 @@
     return min + Math.random() * (max - min);
   }
 
-  // -------- Event listeners for reliable escape --------
-  noBtn.addEventListener('pointerenter', () => escape(false));
-  noBtn.addEventListener('pointermove', () => escape(false));
-  noBtn.addEventListener('focus', () => escape(true));
+  function initPosition() {
+    if (!noBtn.offsetWidth || !noBtn.offsetHeight) {
+      requestAnimationFrame(initPosition);
+      return;
+    }
+    positionNoNearRight();
+    noBtn.style.opacity = '1';
+  }
 
-  arena.addEventListener('pointermove', (e) => {
-    const b = noBtn.getBoundingClientRect();
-    const cx = (b.left + b.right) / 2;
-    const cy = (b.top + b.bottom) / 2;
-    if (distance(e.clientX, e.clientY, cx, cy) < 90) escape(false);
+  // -------- NO: never clickable --------
+  ['click', 'mousedown', 'mouseup'].forEach((evt) => {
+    noBtn.addEventListener(
+      evt,
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        escape(true, getEventPoint(e));
+        return false;
+      },
+      { passive: false }
+    );
   });
 
-  // Mobile Safari can miss pointer events; this makes "No" jump away on tap.
-  noBtn.addEventListener(
-    'touchstart',
-    (e) => {
-      e.preventDefault();
-      escape(true);
-    },
-    { passive: false }
-  );
+  // Button-target events
+  noBtn.addEventListener('pointerenter', (e) => escape(false, getEventPoint(e)));
+  noBtn.addEventListener('pointermove', (e) => escape(false, getEventPoint(e)));
+  noBtn.addEventListener('focus', () => escape(true, null));
 
   noBtn.addEventListener(
     'pointerdown',
     (e) => {
       e.preventDefault();
-      escape(true);
+      e.stopPropagation();
+      escape(true, getEventPoint(e));
     },
     { passive: false }
   );
 
-  arena.addEventListener(
+  noBtn.addEventListener(
     'touchstart',
     (e) => {
-      const t = e.touches && e.touches[0];
-      if (!t) return;
+      e.preventDefault();
+      e.stopPropagation();
+      escape(true, getEventPoint(e));
+    },
+    { passive: false }
+  );
 
-      const b = noBtn.getBoundingClientRect();
-      const cx = (b.left + b.right) / 2;
-      const cy = (b.top + b.bottom) / 2;
-      const isNearNo = distance(t.clientX, t.clientY, cx, cy) < MOBILE_NEAR_DIST;
-      const tappedNo = e.target === noBtn || noBtn.contains(e.target);
+  // Card chase events: as your finger/mouse gets near "No", it runs away.
+  card.addEventListener('pointermove', (e) => {
+    const point = getEventPoint(e);
+    if (!point) return;
+    if (nearNo(point, CHASE_TRIGGER_DIST)) escape(false, point);
+  });
 
-      if (isNearNo || tappedNo) {
+  card.addEventListener(
+    'touchstart',
+    (e) => {
+      const point = getEventPoint(e);
+      if (!point) return;
+      if (nearNo(point, CHASE_TRIGGER_DIST)) {
         e.preventDefault();
-        escape(true);
+        escape(true, point);
+      }
+    },
+    { passive: false }
+  );
+
+  card.addEventListener(
+    'touchmove',
+    (e) => {
+      const point = getEventPoint(e);
+      if (!point) return;
+      if (nearNo(point, CHASE_TRIGGER_DIST)) {
+        e.preventDefault();
+        escape(false, point);
       }
     },
     { passive: false }
