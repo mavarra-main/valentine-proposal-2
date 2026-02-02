@@ -58,8 +58,7 @@ body {
 
 @media (max-width: 520px) {
   .card {
-    width: min(94vw, 390px);
-    padding: 22px 14px;
+    padding: 24px;
   }
 }
 
@@ -125,29 +124,28 @@ body {
 
 @media (max-width: 520px) {
   .headline {
-    font-size: 24px;
+    font-size: 26px;
   }
 }
 
-/* Arena keeps Yes centered */
+/* Arena is the only place the No button is allowed to move within */
 .arena {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   margin: 0 auto 14px;
-  padding: 8px 12px;
-  height: 96px;
+  padding: 10px 12px;
+  height: 72px;
   width: 100%;
   max-width: 460px;
 }
 
 @media (max-width: 520px) {
   .arena {
-    height: 128px;
+    height: 92px;
     max-width: 100%;
-    justify-content: flex-start;
-    padding: 8px 0 16px 12px;
   }
 }
 
@@ -160,13 +158,11 @@ body {
   cursor: pointer;
   min-width: 120px;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  backface-visibility: hidden;
 }
 
 @media (max-width: 520px) {
   .btn {
-    min-width: 102px;
+    min-width: 108px;
     padding: 12px 20px;
     font-size: 15px;
   }
@@ -184,30 +180,28 @@ body {
   box-shadow: 0 10px 24px rgba(255, 61, 141, 0.28);
   position: relative;
   z-index: 2;
-  transition: background-color 160ms ease;
+  transition: transform 160ms ease, background-color 160ms ease;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .btn-yes:hover {
-    background: var(--pink-dark);
-  }
+.btn-yes:hover {
+  transform: translateY(-1px) scale(1.02);
+  background: var(--pink-dark);
 }
 
-/* No moves inside the full card */
+/* No moves inside arena */
 .btn-no {
   background: var(--gray-btn);
   color: var(--gray-text);
   position: absolute;
   left: 50%;
-  top: 56%;
-  transform: translate(-50%, -50%);
-  z-index: 4;
+  top: 10px;
+  transform: translateX(-50%);
+  z-index: 1;
 
   user-select: none;
 
   /* Smooth playful movement */
   transition: left 180ms ease, top 180ms ease, transform 180ms ease, opacity 120ms ease;
-  will-change: left, top, transform;
 
   /* Start hidden until positioned by JS to avoid overlap flashes */
   opacity: 0;
@@ -240,20 +234,7 @@ body {
 
 .successText {
   margin: 0;
-  max-width: 540px;
-  line-height: 1.5;
   color: var(--muted);
-}
-
-@media (max-width: 520px) {
-  .successTitle {
-    font-size: 34px;
-  }
-
-  .successText {
-    max-width: 100%;
-    font-size: 14px;
-  }
 }
 
 /* Confetti */
