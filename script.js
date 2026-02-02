@@ -74,22 +74,34 @@
   // We'll move it within the actions bounding box.
   positionNoButtonInitial();
 
-  // Escape triggers
+  // Escape triggers (mouse)
   noBtn.addEventListener('mouseenter', escape);
   actions.addEventListener('mousemove', (e) => {
     // If mouse gets close to the No button, escape.
     if (distanceToButton(e.clientX, e.clientY) < 90) escape();
   });
 
-  // Touch support
+  // Tap support (mobile): on touch near/on "No", it jumps away.
+  // We do NOT use DeviceMotion/DeviceOrientation (explicitly removed).
   actions.addEventListener(
     'touchstart',
     (e) => {
       const t = e.touches[0];
       if (!t) return;
-      if (distanceToButton(t.clientX, t.clientY) < 110) escape(true);
+      if (distanceToButton(t.clientX, t.clientY) < 120) escape(true);
     },
     { passive: true }
+  );
+
+  // Extra: if the user manages to tap directly on the "No" button area,
+  // instantly reposition it.
+  noBtn.addEventListener(
+    'touchstart',
+    (e) => {
+      e.preventDefault();
+      escape(true);
+    },
+    { passive: false }
   );
 
   function positionNoButtonInitial() {
