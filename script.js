@@ -22,6 +22,7 @@
   if (!card || !arena || !yesBtn || !noBtn || !headline || !confetti) return;
 
   const MIN_DIST = 90; // minimum distance from Yes (center-to-center)
+  const MOBILE_NEAR_DIST = 110;
 
   // -------- YES: success state --------
   yesBtn.addEventListener('click', () => {
@@ -67,6 +68,7 @@
       (e) => {
         e.preventDefault();
         e.stopPropagation();
+        escape(true);
         return false;
       },
       { passive: false }
@@ -181,6 +183,7 @@
   // -------- Event listeners for reliable escape --------
   noBtn.addEventListener('pointerenter', () => escape(false));
   noBtn.addEventListener('pointermove', () => escape(false));
+  noBtn.addEventListener('focus', () => escape(true));
 
   arena.addEventListener('pointermove', (e) => {
     const b = noBtn.getBoundingClientRect();
@@ -189,6 +192,7 @@
     if (distance(e.clientX, e.clientY, cx, cy) < 90) escape(false);
   });
 
+  // Mobile Safari can miss pointer events; this makes "No" jump away on tap.
   noBtn.addEventListener(
     'touchstart',
     (e) => {
@@ -203,6 +207,26 @@
     (e) => {
       e.preventDefault();
       escape(true);
+    },
+    { passive: false }
+  );
+
+  arena.addEventListener(
+    'touchstart',
+    (e) => {
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+
+      const b = noBtn.getBoundingClientRect();
+      const cx = (b.left + b.right) / 2;
+      const cy = (b.top + b.bottom) / 2;
+      const isNearNo = distance(t.clientX, t.clientY, cx, cy) < MOBILE_NEAR_DIST;
+      const tappedNo = e.target === noBtn || noBtn.contains(e.target);
+
+      if (isNearNo || tappedNo) {
+        e.preventDefault();
+        escape(true);
+      }
     },
     { passive: false }
   );
