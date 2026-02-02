@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Valentine Proposal</title>
+
+    <!-- Rounded, friendly font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page" aria-label="Valentine proposal">
+      <section class="card" aria-live="polite">
+        <div class="hero" aria-hidden="true">
+          <!-- Cute cat face with heart (inline SVG) -->
+          <svg class="cat" viewBox="0 0 220 170" role="img" aria-label="Cute cat">
+            <!-- Ears -->
+            <path class="cat-ear" d="M55 54 L28 26 Q22 20 24 34 L30 72 Z" />
+            <path class="cat-ear" d="M165 54 L192 26 Q198 20 196 34 L190 72 Z" />
+
+            <!-- Head -->
+            <path
+              class="cat-head"
+              d="M55 60 Q32 82 42 110 Q55 148 110 150 Q165 148 178 110 Q188 82 165 60 Q135 36 110 48 Q85 36 55 60 Z"
+            />
+
+            <!-- Cheeks -->
+            <circle class="cat-cheek" cx="78" cy="106" r="10" />
+            <circle class="cat-cheek" cx="142" cy="106" r="10" />
+
+            <!-- Eyes -->
+            <path class="cat-eye" d="M75 92 Q84 86 93 92" />
+            <path class="cat-eye" d="M127 92 Q136 86 145 92" />
+
+            <!-- Nose -->
+            <path class="cat-nose" d="M108 102 Q110 100 112 102 Q110 110 108 102 Z" />
+
+            <!-- Mouth -->
+            <path class="cat-mouth" d="M100 114 Q110 122 120 114" />
+
+            <!-- Whiskers -->
+            <path class="cat-whisker" d="M56 110 L18 102" />
+            <path class="cat-whisker" d="M56 118 L18 120" />
+            <path class="cat-whisker" d="M164 110 L202 102" />
+            <path class="cat-whisker" d="M164 118 L202 120" />
+
+            <!-- Heart (top-right) -->
+            <path
+              class="cat-heart"
+              d="M175 44
+                 C175 34 188 30 194 38
+                 C200 30 213 34 213 44
+                 C213 56 200 63 194 69
+                 C188 63 175 56 175 44 Z"
+            />
+          </svg>
+        </div>
+
+        <h1 id="headline" class="headline">nirali will you be my valentine?</h1>
+
+        <div id="actions" class="actions" aria-label="Answer buttons">
+          <button id="yesBtn" class="btn btn-yes" type="button">Yes</button>
+
+          <!-- Intentionally not focusable / not clickable -->
+          <button
+            id="noBtn"
+            class="btn btn-no"
+            type="button"
+            tabindex="-1"
+            aria-disabled="true"
+          >
+            No
+          </button>
+        </div>
+
+        <p class="hint">"No" seems a bit shy 😼</p>
+
+        <!-- Confetti container (created by JS) -->
+        <div id="confetti" class="confetti" aria-hidden="true"></div>
+      </section>
+    </main>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
